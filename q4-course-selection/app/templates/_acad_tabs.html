@@ -1,0 +1,7 @@
+{% from '_macros.html' import tabs %}
+{% set ep = request.endpoint %}
+{{ tabs([
+  ('教学进程计划', url_for('academic.progress_home'), ep.startswith('academic.progress') or ep.startswith('academic.term_')),
+  ('教学任务', url_for('academic.tasks'), ep in ('academic.tasks', 'academic.task_detail')),
+  ('课程表', url_for('academic.timetable_home'), ep.startswith('academic.timetable') or ep.startswith('academic.slot'))
+]) }}

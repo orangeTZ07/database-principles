@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block body %}
+<h2>{{ title }}</h2>
+{% if hint %}<p class="muted">{{ hint }}</p>{% endif %}
+<form method="post" class="card">{{ csrf }}
+  <div class="checks">{% for v, label, checked in items %}<label class="check"><input type="checkbox" name="item" value="{{ v }}" {{ 'checked' if checked }}> {{ label }}</label>{% endfor %}</div>
+  <p><button class="btn primary">保存</button> <a class="btn" href="{{ back }}">返回</a></p>
+</form>
+{% endblock %}

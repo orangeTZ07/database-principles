@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.course_name }} 教学任务{% endblock %}
+{% block body %}
+{% include '_acad_tabs.html' %}
+<h2>{{ task.course_id }} {{ task.course_name }}　<small class="muted">{{ task.term_id }}</small></h2>
+<div class="toolbar no-print"><a class="btn" href="{{ url_for('academic.tasks', term=task.term_id) }}">← 返回教学任务</a></div>
+<div class="card kv">
+  <div><b>{{ task.nature }}</b>性质</div><div><b>{{ task.hours }}</b>学时</div>
+  <div><b>{{ task.required_count }}</b>必修学生人数</div>
+  <div><b>{{ basis }}</b>拆分依据人数</div>
+  <div><b>{{ [limit, room_max]|min }}</b>每班人数上限（限额 {{ limit }} / 最大教室 {{ room_max }}）</div>
+</div>
+{% if classes %}<p>涉及班级：{% for c in classes %}{{ c.name }}（{{ c.student_count }}人）{{ '、' if not loop.last }}{% endfor %}</p>{% endif %}
+
+{% if task.nature == '任选' %}
+<form method="post" action="{{ url_for('academic.task_expected', task_id=task.id) }}" class="card toolbar">{{ csrf }}
+  任选课预计选课人数 <input type="number" name="expected" min="0" value="{{ task.expected_count if task.expected_count is not none else '' }}" required style="width:100px">
+  <button class="btn">保存</button><span class="muted">（可在「数据挖掘」中按历年人数趋势预测后一键采纳）</span>
+</form>
+{% endif %}
+
+<div class="toolbar">
+  <form method="post" action="{{ url_for('academic.task_split', task_id=task.id) }}" class="inline" onsubmit="return confirm('将按人数重新拆分课头（已有选课记录的课头不可删除）。继续？')">{{ csrf }}<button class="btn primary">按人数自动拆分课头</button></form>
+  <form method="post" action="{{ url_for('academic.section_add', task_id=task.id) }}" class="inline">{{ csrf }}
+    新增课头，人数上限 <input type="number" name="capacity" min="1" value="{{ [limit, room_max]|min }}" style="width:80px"><button class="btn">新增</button></form>
+</div>
+
+{% for s in secs %}
+<div class="card">
+  <div class="toolbar" style="margin-top:0">
+    <b>第 {{ s.section_no }} 课头</b>
+    <span class="tag {{ 'bad' if s.remaining <= 0 else 'ok' }}">已选 {{ s.enrolled_count }} / {{ s.capacity }}</span>
+    <form method="post" action="{{ url_for('academic.section_capacity', sid=s.section_id) }}" class="inline">{{ csrf }}
+      人数上限 <input type="number" name="capacity" value="{{ s.capacity }}" min="1" style="width:80px"><button class="btn small">修改</button></form>
+    <a class="btn small" href="{{ url_for('academic.timetable_section', sid=s.section_id) }}">排课 →</a>
+    <form method="post" action="{{ url_for('academic.section_delete', sid=s.section_id) }}" class="inline" onsubmit="return confirm('删除该课头？')">{{ csrf }}<button class="btn small danger">删除课头</button></form>
+  </div>
+  <p>上课安排：{% if s.slots %}{% for x in s.slots %}<span class="tag">{{ x }}</span> {% endfor %}{% else %}<span class="muted">尚未排课</span>{% endif %}</p>
+  <table>
+    <thead><tr><th>教师</th><th>职称</th><th>角色</th><th class="no-print"></th></tr></thead>
+    <tbody>
+    {% for t in s.tlist %}
+    <tr><td>{{ t.name }}（{{ t.teacher_id }}）</td><td>{{ t.title }}</td><td>{% if t.is_lead %}<span class="tag ok">主讲</span>{% else %}合上{% endif %}</td>
+      <td class="no-print nowrap">
+        {% if not t.is_lead %}<form method="post" action="{{ url_for('academic.section_teacher_action', sid=s.section_id, tid=t.teacher_id, action='lead') }}" class="inline">{{ csrf }}<button class="btn small">设为主讲</button></form>{% endif %}
+        <form method="post" action="{{ url_for('academic.section_teacher_action', sid=s.section_id, tid=t.teacher_id, action='remove') }}" class="inline">{{ csrf }}<button class="btn small danger">移除</button></form>
+      </td></tr>
+    {% else %}<tr><td colspan="4" class="muted">还没有分配教师</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="{{ url_for('academic.section_teacher_add', sid=s.section_id) }}" class="toolbar no-print">{{ csrf }}
+    <select name="teacher_id" required><option value="">选择有任课资格的教师…</option>
+      {% for t in cands %}<option value="{{ t.id }}">{{ t.name }}（{{ t.title }}，本学期 {{ t.workload }} 个课头）</option>{% endfor %}</select>
+    <label class="check" style="margin:0"><input type="checkbox" name="is_lead" value="1"> 设为主讲</label>
+    <button class="btn">分配</button>
+  </form>
+</div>
+{% else %}<p class="muted">尚未设置课头，请点击「按人数自动拆分课头」。</p>{% endfor %}
+{% endblock %}

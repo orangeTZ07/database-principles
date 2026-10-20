@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block body %}
+<h2>欢迎，{{ user.username }}（{{ role_names[user.role] }}）</h2>
+{% if student %}
+  <div class="card">
+    <b>{{ student.name }}</b>　学号 {{ student.id }}　{{ student.college_name }} · {{ student.major_name }} · {{ student.class_name }}（{{ student.enroll_year }} 级）
+    {% if open_terms %}<p>选课已开放：{% for t in open_terms %}<b>{{ t.id }}</b>（{{ t.select_start }} ～ {{ t.select_end }}）{% endfor %}　<a class="btn primary" href="{{ url_for('student.enroll_home') }}">去选课</a></p>
+    {% else %}<p class="muted">当前不在选课时段。</p>{% endif %}
+  </div>
+{% elif teacher %}
+  <div class="card"><b>{{ teacher.name }}</b>　工号 {{ teacher.id }}　{{ teacher.dept }} · {{ teacher.title }}　<a href="{{ url_for('query.teacher_timetable') }}">我的课表</a></div>
+{% endif %}
+<div class="cards">
+  {% for label, ep in nav %}<a class="card link-card" href="{{ url_for(ep) }}"><b>{{ label }}</b></a>{% endfor %}
+</div>
+{% endblock %}

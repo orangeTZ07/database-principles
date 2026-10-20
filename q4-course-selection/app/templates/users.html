@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}用户管理{% endblock %}
+{% block body %}
+<h2>用户管理</h2>
+<p class="muted">账号必须全部为英文字母且不区分大小写不可重复；新账号初始密码为 <code>123</code>；管理员账号 <code>admin</code> 不能停用。用户修改密码需提供原密码，忘记密码由管理员复位。</p>
+<details class="card" open>
+  <summary><b>＋ 添加账号</b></summary>
+  <form method="post" action="{{ url_for('users.add') }}" class="formgrid">{{ csrf }}
+    <label>账号（全英文）<input name="username" pattern="[A-Za-z]{1,32}" required></label>
+    <label>角色<select name="role">{% for r in creatable %}<option value="{{ r }}">{{ role_names[r] }}</option>{% endfor %}</select></label>
+    <label>关联学号 / 工号<input name="person_id" placeholder="学生、教师账号必填"></label>
+    <button class="btn primary">添加</button>
+  </form>
+</details>
+<form method="get" class="toolbar">
+  <input name="q" value="{{ q }}" placeholder="按账号 / 姓名搜索">
+  <select name="role" onchange="this.form.submit()"><option value="">全部角色</option>{% for k, v in role_names.items() %}<option value="{{ k }}" {{ 'selected' if role == k }}>{{ v }}</option>{% endfor %}</select>
+  <button class="btn">查询</button>
+</form>
+<table>
+  <thead><tr><th>账号</th><th>角色</th><th>姓名</th><th>学号 / 工号</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr><td>{{ r.username }}</td><td>{{ role_names[r.role] }}</td><td>{{ r.person or '—' }}</td><td>{{ r.person_id or '—' }}</td>
+    <td>{% if r.is_active %}<span class="tag ok">启用</span>{% else %}<span class="tag bad">已停用</span>{% endif %}</td><td class="muted">{{ r.created_at }}</td>
+    <td class="nowrap">
+      {% if r.username|lower != 'admin' %}<form method="post" action="{{ url_for('users.toggle', username=r.username) }}" class="inline">{{ csrf }}<button class="btn small">{{ '停用' if r.is_active else '启用' }}</button></form>{% endif %}
+      <form method="post" action="{{ url_for('users.reset', username=r.username) }}" class="inline" onsubmit="return confirm('将 {{ r.username }} 的密码复位为 123？')">{{ csrf }}<button class="btn small">复位密码</button></form>
+    </td></tr>
+  {% else %}<tr><td colspan="7" class="muted">没有匹配的账号</td></tr>{% endfor %}
+  </tbody>
+</table>
+<p class="muted">最多显示 300 条，可用搜索缩小范围。</p>
+{% endblock %}

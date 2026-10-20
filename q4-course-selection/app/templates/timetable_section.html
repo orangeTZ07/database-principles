@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from '_grid.html' import render_grid %}
+{% block title %}排课：{{ sec.course_name }}{% endblock %}
+{% block body %}
+{% include '_acad_tabs.html' %}
+<h2>{{ sec.course_id }} {{ sec.course_name }} 第 {{ sec.section_no }} 课头　<small class="muted">{{ sec.term_id }}</small></h2>
+<div class="toolbar no-print">
+  <a class="btn" href="{{ url_for('academic.timetable_home', term=sec.term_id) }}">← 返回课程表</a>
+  <a class="btn" href="{{ url_for('academic.task_detail', task_id=sec.task_id) }}">教学任务</a>
+  <form method="post" action="{{ url_for('academic.section_auto', sid=sec.section_id) }}" class="inline">{{ csrf }}<button class="btn primary">重新自动排课</button></form>
+</div>
+<div class="card kv">
+  <div><b>{{ sec.teachers or '未分配' }}</b>教师</div><div><b>{{ sec.hours }}</b>学时</div>
+  <div><b>{{ sec.enrolled_count }} / {{ sec.capacity }}</b>选课人数 / 容量</div><div><b>{{ term.weeks }} 周</b>教学周数</div>
+</div>
+
+<h3>周课表</h3>
+{{ render_grid(grid) }}
+
+<h3>已排时间</h3>
+<table>
+  <thead><tr><th>星期</th><th>节次</th><th>周次</th><th>教室</th><th class="num">教室容量</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for s in slots %}
+  <tr><td>{{ weekdays[s.weekday] }}</td><td>第 {{ s.start_period }}-{{ s.start_period + s.period_count - 1 }} 节</td><td>{{ s.week_start }}-{{ s.week_end }} 周</td>
+    <td>{{ s.area }} {{ s.building }}{{ s.room_no }}</td><td class="num">{{ s.room_capacity }}</td>
+    <td class="no-print"><form method="post" action="{{ url_for('academic.slot_delete', slot_id=s.slot_id) }}" class="inline">{{ csrf }}<button class="btn small danger">删除</button></form></td></tr>
+  {% else %}<tr><td colspan="6" class="muted">尚未排课</td></tr>{% endfor %}
+  </tbody>
+</table>
+
+<h3>手工添加上课时间</h3>
+<form method="post" action="{{ url_for('academic.slot_add', sid=sec.section_id) }}" class="card formgrid">{{ csrf }}
+  <label>星期<select name="weekday">{% for i in range(1, 8) %}<option value="{{ i }}">{{ weekdays[i] }}</option>{% endfor %}</select></label>
+  <label>起始节次<input type="number" name="start" min="1" max="12" value="1" required></label>
+  <label>连续节数<input type="number" name="count" min="1" max="4" value="2" required></label>
+  <label>起始周<input type="number" name="ws" min="1" max="{{ term.weeks }}" value="1" required></label>
+  <label>结束周<input type="number" name="we" min="1" max="{{ term.weeks }}" value="{{ term.weeks }}" required></label>
+  <label>教室<select name="room" required>
+    {% for r in rooms %}<option value="{{ r.id }}">{{ r.area }} {{ r.building }}{{ r.room_no }}（容量 {{ r.capacity }}{{ '，多媒体' if r.is_multimedia }}）</option>{% endfor %}</select></label>
+  <button class="btn primary">添加（自动检查冲突）</button>
+</form>
+{% endblock %}

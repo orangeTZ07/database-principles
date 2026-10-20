@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}选教学班：{{ task.course_name }}{% endblock %}
+{% block body %}
+<h2>{{ task.course_id }} {{ task.course_name }}　<small class="muted">{{ term.id }} · {{ task.nature }} · {{ task.hours }} 学时</small></h2>
+<div class="toolbar no-print"><a class="btn" href="{{ url_for('student.enroll_home', term=term.id) }}">← 返回选课</a>
+  {% if is_open %}<span class="tag ok">选课进行中，截止 {{ term.select_end }}</span>{% else %}<span class="tag bad">不在选课时段</span>{% endif %}</div>
+{% if prereqs %}<p>先导课程：{% for p in prereqs %}{{ p.id }} {{ p.name }}{{ '、' if not loop.last }}{% endfor %}</p>{% endif %}
+<p class="muted">每个教学班有人数上限，只有仍有空位时才能选中；同一门课只能选一个教学班，且上课时间不能与已选课程冲突。</p>
+<table>
+  <thead><tr><th>教学班</th><th>教师</th><th>上课时间与教室</th><th class="num">已选 / 容量</th><th class="num">空位</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for s in secs %}
+  <tr><td>第 {{ s.section_no }} 班</td><td>{{ s.teachers or '待定' }}</td>
+    <td>{% for x in s.slots %}<div>{{ x }}</div>{% else %}<span class="muted">待排课</span>{% endfor %}</td>
+    <td class="num">{{ s.enrolled_count }} / {{ s.capacity }}</td>
+    <td class="num">{% if s.remaining <= 0 %}<span class="tag bad">已满</span>{% else %}{{ s.remaining }}{% endif %}</td>
+    <td class="no-print">
+      {% if my_section == s.section_id %}<span class="tag ok">已选此班</span>
+      {% elif my_section %}<span class="muted">已选其他班</span>
+      {% elif is_open %}<form method="post" action="{{ url_for('student.join') }}" class="inline">{{ csrf }}
+        <input type="hidden" name="section_id" value="{{ s.section_id }}"><input type="hidden" name="term" value="{{ term.id }}">
+        <button class="btn small primary" {{ 'disabled' if s.remaining <= 0 }}>选课</button></form>{% endif %}
+    </td></tr>
+  {% else %}<tr><td colspan="6" class="muted">暂未开设教学班</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% if my_section and is_open %}
+<form method="post" action="{{ url_for('student.drop') }}" class="inline" onsubmit="return confirm('确认退选？')">{{ csrf }}
+  <input type="hidden" name="task_id" value="{{ task.id }}"><input type="hidden" name="term" value="{{ term.id }}"><button class="btn danger">退选本课程</button></form>
+{% endif %}
+{% endblock %}

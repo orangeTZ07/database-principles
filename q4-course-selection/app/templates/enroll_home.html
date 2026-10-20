@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import term_picker %}
+{% block title %}选课{% endblock %}
+{% block body %}
+<h2>学生选课</h2>
+{% if not stu %}
+  <div class="card">当前账号不是学生账号，不能选课。可在「数据查询」中查看各学期的选课名单与统计。</div>
+{% else %}
+<div class="card"><b>{{ stu.name }}</b>　学号 {{ stu.id }}　{{ stu.college_name }} · {{ stu.major_name }} · {{ stu.class_name }}（{{ stu.enroll_year }} 级）</div>
+{% if not term %}
+  <div class="card">当前没有开放的选课学期。
+    {% for t in upcoming %}<p>学期 <b>{{ t.id }}</b> 的选课将于 {{ t.select_start }} 开始（至 {{ t.select_end }}）。</p>{% endfor %}</div>
+{% else %}
+<div class="toolbar">
+  {{ term_picker(terms, term.id) }}
+  {% if is_open %}<span class="tag ok">选课进行中：{{ term.select_start }} ～ {{ term.select_end }}</span>
+  {% else %}<span class="tag bad">不在选课时段（{{ term.select_start or '未设置' }} ～ {{ term.select_end or '未设置' }}），仅可查看，不能选课或退选</span>{% endif %}
+</div>
+
+<h3>已选课程　<small class="muted">共 {{ mine|length }} 门，{{ total_hours }} 学时</small></h3>
+<table>
+  <thead><tr><th>课程</th><th>性质</th><th class="num">学时</th><th>教学班</th><th>教师</th><th>上课时间与教室</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for m in mine %}
+  <tr><td>{{ m.course_id }} {{ m.course_name }}</td><td><span class="tag {{ 'warn' if m.nature == '任选' }}">{{ m.nature }}</span></td>
+    <td class="num">{{ m.hours }}</td><td>第 {{ m.section_no }} 班</td><td>{{ m.teachers or '—' }}</td>
+    <td>{% for x in m.slots %}<div>{{ x }}</div>{% else %}<span class="muted">待排课</span>{% endfor %}</td>
+    <td class="no-print">{% if is_open %}<form method="post" action="{{ url_for('student.drop') }}" class="inline" onsubmit="return confirm('确认退选 {{ m.course_name }}？')">{{ csrf }}
+      <input type="hidden" name="task_id" value="{{ m.task_id }}"><input type="hidden" name="term" value="{{ term.id }}"><button class="btn small danger">退选</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">本学期还没有选课记录</td></tr>{% endfor %}
+  </tbody>
+</table>
+
+<h3>本学期必修课程列表</h3>
+<table>
+  <thead><tr><th>课程</th><th class="num">学时</th><th>先导课程</th><th class="num">教学班数</th><th>状态</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for t in required %}
+  <tr><td>{{ t.course_id }} {{ t.course_name }}</td><td class="num">{{ t.hours }}</td><td>{{ t.prereqs or '—' }}</td><td class="num">{{ t.n_sections }}</td>
+    <td>{% if t.task_id in taken %}<span class="tag ok">已选</span>{% elif not t.n_sections %}<span class="tag warn">暂未开设教学班</span>{% else %}<span class="tag bad">未选</span>{% endif %}</td>
+    <td class="no-print">{% if t.n_sections %}<a class="btn small primary" href="{{ url_for('student.enroll_course', task_id=t.task_id) }}">{{ '查看教学班' if t.task_id in taken or not is_open else '选教学班' }}</a>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">本学期没有必修课程</td></tr>{% endfor %}
+  </tbody>
+</table>
+
+<h3>本学期任选课程</h3>
+<table>
+  <thead><tr><th>课程</th><th class="num">学时</th><th>先导课程</th><th class="num">教学班数</th><th>状态</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for t in electives %}
+  <tr><td>{{ t.course_id }} {{ t.course_name }}</td><td class="num">{{ t.hours }}</td><td>{{ t.prereqs or '—' }}</td><td class="num">{{ t.n_sections }}</td>
+    <td>{% if t.task_id in taken %}<span class="tag ok">已选</span>{% else %}<span class="tag">可选</span>{% endif %}</td>
+    <td class="no-print"><a class="btn small" href="{{ url_for('student.enroll_course', task_id=t.task_id) }}">{{ '查看教学班' if t.task_id in taken or not is_open else '选教学班' }}</a></td></tr>
+  {% else %}<tr><td colspan="6" class="muted">本学期没有开设任选课程</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+{% endblock %}

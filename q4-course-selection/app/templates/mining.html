@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}数据挖掘：任选课人数预测{% endblock %}
+{% block body %}
+<h2>数据挖掘：任选课选课人数预测</h2>
+<p class="muted">基于某任选课「同一学期序号（上学期 / 下学期）历年选课人数」做最小二乘线性回归，预测目标学期的选课人数；
+  再用预测人数指导教室安排：超过班额限额（{{ limit }}）或最大教室容量（{{ room_max }}）时先拆成多个课头，然后按<b>每个课头的人数</b>选容量足够的最小教室（容量决定教室）。</p>
+<form method="get" class="toolbar no-print">目标学期
+  <select name="term" onchange="this.form.submit()">{% for t in terms %}<option value="{{ t.id }}" {{ 'selected' if t.id == tid }}>{{ t.id }}</option>{% endfor %}</select></form>
+
+<table>
+  <thead><tr><th>任选课程</th><th>历年人数（{{ '同学期' }}）</th><th class="num">预测人数</th><th>预测方法</th><th>推荐教室</th><th class="num">建议课头数</th><th>采纳状态</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr class="{{ 'sel' if detail and detail.course_id == r.course_id }}">
+    <td><a href="{{ url_for('stats.mining_home', term=tid, course=r.course_id) }}">{{ r.course_id }} {{ r.name }}</a></td>
+    <td>{% for h in r.history %}<small>{{ h.year_start }}:{{ h.enrolled }}</small>{{ ' ' }}{% else %}<span class="muted">无</span>{% endfor %}</td>
+    <td class="num"><b>{{ r.predicted if r.predicted is not none else '—' }}</b></td>
+    <td>{{ r.method }}{% if r.r2 is not none %}<small class="muted">斜率 {{ r.slope }} 人/年，R² {{ r.r2 }}</small>{% endif %}</td>
+    <td>{% if r.room %}{{ r.room.area }} {{ r.room.building }}{{ r.room.room_no }}（容量 {{ r.room.capacity }}）<small class="muted">每课头约 {{ r.per_section }} 人</small>{% elif r.predicted is not none %}<span class="tag warn">没有容量足够的教室</span>{% else %}—{% endif %}</td>
+    <td class="num">{{ r.n_sections or '—' }}</td>
+    <td>{% if r.saved %}<span class="tag ok">已采纳 {{ r.saved.predicted_count }} 人</span>{% elif not r.task %}<span class="tag warn">本学期无教学任务</span>{% else %}<span class="tag">未采纳</span>{% endif %}</td>
+    <td class="no-print nowrap">{% if r.predicted is not none and r.task %}
+      <form method="post" action="{{ url_for('stats.mining_adopt') }}" class="inline">{{ csrf }}<input type="hidden" name="term" value="{{ tid }}"><input type="hidden" name="course" value="{{ r.course_id }}">
+        <button class="btn small primary">采纳</button>
+        <button class="btn small" name="split" value="1" title="采纳后按预测人数重新拆分课头">采纳并拆分课头</button></form>{% endif %}</td>
+  </tr>
+  {% else %}<tr><td colspan="8" class="muted">培养方案中还没有任选课程</td></tr>{% endfor %}
+  </tbody>
+</table>
+
+{% if detail %}
+<h3>{{ detail.course_id }} {{ detail.name }}：选课人数趋势与预测</h3>
+{% if chart %}<div class="chart-box">{{ chart }}</div>{% else %}<p class="muted">没有历史数据，无法绘制趋势。</p>{% endif %}
+<p class="muted">方法：{{ detail.method }}{% if detail.slope is not none %}，斜率 {{ detail.slope }} 人/年{% endif %}{% if detail.r2 is not none %}，R² = {{ detail.r2 }}{% endif %}。
+  交叉校验：MySQL 存储函数 <code>fn_forecast_enroll('{{ detail.course_id }}', '{{ tid }}')</code> 在数据库内用 SQL 聚合算出的预测值为
+  <b>{{ detail.sql_value if detail.sql_value is not none else '—' }}</b>{% if detail.sql_value == detail.predicted %}（与应用层一致）{% endif %}。</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% from '_grid.html' import render_grid %}
+{% block title %}选课综合查询{% endblock %}
+{% block body %}
+<h2>选课综合查询</h2>
+{% if not term %}<p class="muted">尚无学期数据。</p>{% else %}
+<form method="get" class="toolbar no-print">学期
+  <select name="term" onchange="this.form.submit()">{% for t in terms %}<option value="{{ t.id }}" {{ 'selected' if t.id == term.id }}>{{ t.id }}</option>{% endfor %}</select>
+  班级
+  <select name="class_id" onchange="this.form.submit()">{% for c in classes %}<option value="{{ c.id }}" {{ 'selected' if c.id == cid }}>{{ c.college_name }} · {{ c.name }}</option>{% endfor %}</select>
+  <button class="btn">查询</button>
+  <button type="button" class="btn" onclick="window.print()">打印</button>
+</form>
+{% if cls %}
+<h3>1. 教学进程</h3>
+<div class="card kv">
+  <div><b>{{ cls.name }}</b>行政班</div><div><b>{{ cls.major_name }}</b>专业（{{ cls.college_name }}）</div>
+  <div><b>{{ cls.enroll_year }} 级</b>入学年份</div><div><b>第 {{ sem }} 学期</b>本学期在培养方案中的位置</div>
+  <div><b>{{ term.weeks }} 周</b>教学周数（{{ term.start_date }} 开学）</div>
+  <div><b>{{ term.select_start or '—' }} ～ {{ term.select_end or '—' }}</b>自由选课时段</div>
+</div>
+
+<h3>2. 教学任务</h3>
+<table>
+  <thead><tr><th>课程</th><th>性质</th><th class="num">学时</th><th class="num">学分</th><th class="num">本班人数</th><th>教学班 / 教师 / 选课人数</th></tr></thead>
+  <tbody>
+  {% for t in tasks %}
+  <tr><td>{{ t.course_id }} {{ t.course_name }}</td><td>{{ t.nature }}</td><td class="num">{{ t.hours }}</td><td class="num">{{ t.credits if t.credits is not none else '—' }}</td><td class="num">{{ t.student_count }}</td>
+    <td>{% for s in secs if s.task_id == t.task_id %}<div>第 {{ s.section_no }} 班　{{ s.teachers or '教师待定' }}　{{ s.enrolled_count }}/{{ s.capacity }} 人</div>{% else %}<span class="muted">未设教学班</span>{% endfor %}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">本学期该班没有教学任务</td></tr>{% endfor %}
+  </tbody>
+</table>
+
+<h3>3. 课程表</h3>
+{{ render_grid(grid) }}
+
+<h3>4. 选课名单</h3>
+{% if user.role == 'student' %}<p class="muted">学生账号不能查看其他同学的选课名单。</p>
+{% else %}
+{% for t, rows in roster %}
+  <details class="card"><summary><b>{{ t.course_id }} {{ t.course_name }}</b>　已选 {{ rows|selectattr('section_id')|list|length }} / {{ rows|length }} 人</summary>
+    <table><thead><tr><th>学号</th><th>姓名</th><th>选课情况</th></tr></thead><tbody>
+    {% for r in rows %}<tr><td>{{ r.id }}</td><td>{{ r.name }}</td><td>{% if r.section_id %}第 {{ r.section_no }} 班{% else %}<span class="tag bad">未选</span>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></details>
+{% else %}<p class="muted">无</p>{% endfor %}
+{% endif %}
+{% endif %}
+{% endif %}
+{% endblock %}

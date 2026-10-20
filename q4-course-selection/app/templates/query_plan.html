@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}培养方案查询{% endblock %}
+{% block body %}
+<h2>专业培养方案查询</h2>
+<form method="get" class="toolbar no-print">专业
+  <select name="major_id" onchange="this.form.submit()">{% for m in majors %}<option value="{{ m.id }}" {{ 'selected' if m.id == mid }}>{{ m.college }} · {{ m.name }}</option>{% endfor %}</select>
+  <button type="button" class="btn" onclick="window.print()">打印</button>
+</form>
+<div class="card kv"><div><b>{{ total[0] }}</b>总学分</div><div><b>{{ total[1] }}</b>总学时</div><div><b>{{ by_sem|length }}</b>已安排学期数</div></div>
+{% for sem, rows in by_sem.items() %}
+<h3>第 {{ sem }} 学期　<small class="muted">{{ rows|length }} 门，{{ rows|sum(attribute='credits') }} 学分，{{ rows|sum(attribute='hours') }} 学时</small></h3>
+<table>
+  <thead><tr><th>课程</th><th>性质</th><th class="num">学时</th><th class="num">学分</th><th>开课学院</th><th>先导课程</th></tr></thead>
+  <tbody>{% for r in rows %}
+    <tr><td>{{ r.course_id }} {{ r.course_name }}</td><td><span class="tag {{ 'warn' if r.nature == '任选' }}">{{ r.nature }}</span></td>
+      <td class="num">{{ r.hours }}</td><td class="num">{{ r.credits }}</td><td>{{ r.college }}</td><td>{{ r.prereqs or '—' }}</td></tr>{% endfor %}</tbody>
+</table>
+{% else %}<p class="muted">该专业尚未录入培养方案。</p>{% endfor %}
+{% endblock %}

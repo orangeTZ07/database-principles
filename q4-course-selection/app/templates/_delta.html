@@ -1,0 +1,5 @@
+{# 同比/环比单元格：delta(上期值, 变化率%) #}
+{% macro delta(prev, p) -%}
+  {%- if prev is none -%}<span class="muted">—</span>
+  {%- else -%}{{ prev }}{% if p is not none %} <small class="{{ 'up' if p > 0 else ('down' if p < 0 else 'muted') }}">{{ '+' if p > 0 }}{{ p }}%</small>{% endif %}{%- endif -%}
+{%- endmacro %}

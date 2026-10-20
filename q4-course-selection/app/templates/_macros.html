@@ -1,0 +1,24 @@
+{% macro tabs(items) %}
+<div class="tabs no-print">{% for label, url, active in items %}<a href="{{ url }}" class="{{ 'active' if active }}">{{ label }}</a>{% endfor %}</div>
+{% endmacro %}
+
+{% macro field_input(f, choices, value=None) %}
+  {%- if f.kind == 'bool' -%}
+    <input type="checkbox" name="{{ f.name }}" {{ 'checked' if value }}>
+  {%- elif choices is not none -%}
+    <select name="{{ f.name }}" {{ 'required' if f.required }}>
+      {% if not f.required %}<option value="">（空）</option>{% endif %}
+      {% for v, l in choices %}<option value="{{ v }}" {{ 'selected' if value is not none and value|string == v|string }}>{{ l }}</option>{% endfor %}
+    </select>
+  {%- else -%}
+    <input type="{{ 'number' if f.kind in ('int', 'float') else 'text' }}" {% if f.kind == 'float' %}step="any"{% endif %}
+           name="{{ f.name }}" value="{{ value if value is not none else '' }}" {{ 'required' if f.required }}>
+  {%- endif -%}
+{% endmacro %}
+
+{% macro term_picker(terms, current, extra='') %}
+<form method="get" class="inline no-print">学期
+  <select name="term" onchange="this.form.submit()">{% for t in terms %}<option value="{{ t.id }}" {{ 'selected' if t.id == current }}>{{ t.id }}</option>{% endfor %}</select>
+  {{ extra|safe }}
+</form>
+{% endmacro %}

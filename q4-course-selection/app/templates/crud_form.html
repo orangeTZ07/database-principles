@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import tabs as tabs_macro, field_input %}
+{% block body %}
+{{ tabs_macro(tabs) }}
+<h2>编辑{{ ent.title }}</h2>
+<form method="post" class="card formgrid">{{ csrf }}
+  {% for f, ch in fields %}
+    <label>{{ f.label }}
+      {% if f.readonly_on_edit %}<input value="{{ row[f.name] }}" disabled>
+      {% else %}{{ field_input(f, ch, row[f.name]) }}{% endif %}
+      {% if f.help %}<small class="muted">{{ f.help }}</small>{% endif %}</label>
+  {% endfor %}
+  <div><button class="btn primary">保存</button> <a class="btn" href="{{ url_for(request.blueprint ~ '.' ~ ent.key ~ '_list') }}">取消</a></div>
+</form>
+{% endblock %}

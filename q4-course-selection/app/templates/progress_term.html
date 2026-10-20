@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ term.id }} 教学进程{% endblock %}
+{% block body %}
+{% include '_acad_tabs.html' %}
+<h2>{{ term.id }} 教学进程计划</h2>
+<div class="toolbar no-print">
+  <a class="btn" href="{{ url_for('academic.progress_home') }}">← 返回学期列表</a>
+  <form method="post" action="{{ url_for('academic.term_generate', tid=term.id) }}" class="inline">{{ csrf }}<button class="btn primary">{{ '重新生成教学任务' if tasks else '生成教学任务' }}</button></form>
+  <a class="btn" href="{{ url_for('academic.tasks', term=term.id) }}">去制定教学任务（课头/教师）→</a>
+</div>
+<div class="card kv">
+  <div><b>{{ term.weeks }} 周</b>教学周数</div><div><b>{{ term.start_date }}</b>开学日期</div>
+  <div><b>{{ tasks|length }}</b>教学任务数</div>
+  <div><b>{{ term.select_start or '未设置' }}</b>选课开始</div><div><b>{{ term.select_end or '未设置' }}</b>选课截止</div>
+</div>
+<h3>参与本学期的年级（按培养方案学期推算）</h3>
+{% if cohorts %}
+<table><thead><tr><th>行政班</th><th>入学年份</th><th>本学期为第几学期</th></tr></thead><tbody>
+{% for c in cohorts %}<tr><td>{{ c.name }}</td><td>{{ c.enroll_year }}</td><td>第 {{ c.sem }} 学期</td></tr>{% endfor %}
+</tbody></table>
+{% else %}<p class="muted">没有在读班级处于本学期（培养方案为四年制 8 学期）。</p>{% endif %}
+
+<h3>教学任务</h3>
+{% if tasks %}
+<table>
+  <thead><tr><th>课程</th><th>性质</th><th class="num">学时</th><th class="num">必修学生人数</th><th>涉及班级</th></tr></thead>
+  <tbody>
+  {% for t in tasks %}
+  <tr><td><a href="{{ url_for('academic.task_detail', task_id=t.id) }}">{{ t.course_id }} {{ t.course_name }}</a></td>
+      <td><span class="tag {{ 'warn' if t.nature == '任选' }}">{{ t.nature }}</span></td>
+      <td class="num">{{ t.hours }}</td><td class="num">{{ t.required_count }}</td><td>{{ t.classes or '—（任选课，学生自愿选修）' }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="muted">尚未生成教学任务，请点击「生成教学任务」。</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% from '_delta.html' import delta %}
+{% block title %}选课总况统计{% endblock %}
+{% block body %}
+<h2>选课总况统计</h2>
+<form method="get" class="toolbar no-print">学期
+  <select name="term" onchange="this.form.submit()">{% for t in terms %}<option value="{{ t.id }}" {{ 'selected' if t.id == tid }}>{{ t.id }}</option>{% endfor %}</select>
+  <span class="tabs" style="border:0;margin:0">
+    <a href="{{ url_for('stats.index', term=tid, view='chart') }}" class="{{ 'active' if view != 'table' }}">图表</a>
+    <a href="{{ url_for('stats.index', term=tid, view='table') }}" class="{{ 'active' if view == 'table' }}">表格</a></span>
+  <button type="button" class="btn" onclick="window.print()">打印</button>
+  <span class="muted">环比：{{ prev }}　同比：{{ yoy }}</span>
+</form>
+
+<div class="card kv">
+  <div><b>{{ totals.selections[0] if totals.selections[0] is not none else 0 }}</b>本学期选课总门次</div>
+  <div><b>{{ totals.hours[0] if totals.hours[0] is not none else 0 }}</b>本学期选课总学时</div>
+  <div><b>{{ delta(totals.selections[1], totals.selections[3]) }}</b>环比门次（{{ prev }}）</div>
+  <div><b>{{ delta(totals.selections[2], totals.selections[4]) }}</b>同比门次（{{ yoy }}）</div>
+</div>
+
+<h3>一、班级 / 学生选课数与学时数</h3>
+{% if view != 'table' %}
+  <div class="chart-box">{{ charts.classes }}</div>
+{% endif %}
+{% if view == 'table' or True %}
+<table>
+  <thead><tr><th>班级</th><th>专业</th><th class="num">人数</th><th class="num">选课门次</th><th class="num">选课学时</th>
+    <th class="num">人均门次</th><th class="num">门次 环比</th><th class="num">门次 同比</th><th class="num">学时 环比</th><th class="num">学时 同比</th></tr></thead>
+  <tbody>
+  {% for c in classes %}
+  <tr><td><a href="{{ url_for('stats.index', term=tid, view=view, class_id=c.id) }}#students">{{ c.name }}</a></td><td>{{ c.major_name }}</td>
+    <td class="num">{{ c.students }}</td><td class="num">{{ c.selections }}</td><td class="num">{{ c.hours }}</td>
+    <td class="num">{{ (c.selections / c.students)|round(1) if c.students else '—' }}</td>
+    <td class="num">{{ delta(c.selections_prev, c.selections_qoq) }}</td><td class="num">{{ delta(c.selections_yoy, c.selections_yoy_pct) }}</td>
+    <td class="num">{{ delta(c.hours_prev, c.hours_qoq) }}</td><td class="num">{{ delta(c.hours_yoy, c.hours_yoy_pct) }}</td></tr>
+  {% else %}<tr><td colspan="10" class="muted">该学期没有在读班级</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+<p class="muted">表中「环比 / 同比」单元格显示对比学期的数值与变化率（红色上升、绿色下降）；“—”表示对比学期无数据。</p>
+
+{% if cid %}
+<h3 id="students">班级内学生选课情况</h3>
+<table>
+  <thead><tr><th>学号</th><th>姓名</th><th class="num">选课门数</th><th class="num">选课学时</th></tr></thead>
+  <tbody>{% for s in students %}<tr><td>{{ s.id }}</td><td>{{ s.name }}</td><td class="num">{{ s.n }}</td><td class="num">{{ s.hours }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">无学生</td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}
+
+<h3>二、教师教学任务统计</h3>
+{% if view != 'table' %}<div class="chart-box">{{ charts.teachers }}</div>{% endif %}
+<table>
+  <thead><tr><th>工号</th><th>姓名</th><th>职称</th><th class="num">承担课头数</th><th class="num">其中主讲</th><th class="num">教学学时</th>
+    <th class="num">课头 环比</th><th class="num">课头 同比</th><th class="num">学时 环比</th><th class="num">学时 同比</th></tr></thead>
+  <tbody>
+  {% for t in teachers %}
+  <tr><td>{{ t.id }}</td><td>{{ t.name }}</td><td>{{ t.title }}</td><td class="num">{{ t.sections }}</td><td class="num">{{ t.lead_sections }}</td><td class="num">{{ t.hours }}</td>
+    <td class="num">{{ delta(t.sections_prev, t.sections_qoq) }}</td><td class="num">{{ delta(t.sections_yoy, t.sections_yoy_pct) }}</td>
+    <td class="num">{{ delta(t.hours_prev, t.hours_qoq) }}</td><td class="num">{{ delta(t.hours_yoy, t.hours_yoy_pct) }}</td></tr>
+  {% else %}<tr><td colspan="10" class="muted">该学期没有教学任务分配</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="card narrow">
+  <h2>登录</h2>
+  <form method="post">{{ csrf }}
+    <label>账号<input name="username" autofocus required autocomplete="username"></label>
+    <label>密码<input name="password" type="password" required autocomplete="current-password"></label>
+    <button class="btn primary">登录</button>
+  </form>
+  <p class="muted">演示账号（初始密码均为 <code>123</code>）：系统管理员 <code>admin</code>、教研科 <code>research</code>、教务科 <code>academic</code>；教师、学生账号为姓名拼音，可在「用户管理」中查看。</p>
+</div>
+{% endblock %}

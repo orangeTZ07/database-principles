@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}数据查询{% endblock %}
+{% block body %}
+<h2>数据查询</h2>
+<div class="cards">
+  <a class="card link-card" href="{{ url_for('query.plan') }}"><b>专业培养方案查询</b><small class="muted">各专业各学期计划开课、学时、学分</small></a>
+  <a class="card link-card" href="{{ url_for('query.selection_query') }}"><b>选课综合查询</b><small class="muted">某学期各专业班级的教学进程 / 教学任务 / 课表 / 选课名单</small></a>
+  <a class="card link-card" href="{{ url_for('query.student_timetable') }}"><b>学生课表</b><small class="muted">查询并打印个人课表</small></a>
+  <a class="card link-card" href="{{ url_for('query.teacher_timetable') }}"><b>教师课表</b><small class="muted">教师任课安排</small></a>
+</div>
+{% endblock %}

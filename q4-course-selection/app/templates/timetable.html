@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import term_picker %}
+{% block title %}课程表{% endblock %}
+{% block body %}
+{% include '_acad_tabs.html' %}
+<h2>编制课程表</h2>
+<p class="muted">按学期教学日历周数，把课程、教师、教室匹配到具体的时间段：教师、教室、同班学生不得冲突；同一课头尽量保持教室不变，必须变化时按教学区 → 教学楼 → 楼层就近调整。</p>
+{% if not term %}<p class="muted">尚无学期。</p>{% else %}
+<div class="toolbar">
+  {{ term_picker(terms, term.id) }}
+  <form method="post" action="{{ url_for('academic.timetable_auto', tid=term.id) }}" class="inline">{{ csrf }}<button class="btn primary">一键自动排课</button></form>
+  <form method="post" action="{{ url_for('academic.timetable_clear', tid=term.id) }}" class="inline" onsubmit="return confirm('清空本学期全部课程表？')">{{ csrf }}<button class="btn danger">清空课表</button></form>
+  <span class="muted">教学周数：{{ term.weeks }} 周</span>
+</div>
+{% if conflicts %}
+<div class="flash error"><b>发现 {{ conflicts|length }} 处冲突</b>
+  <ul>{% for kind, text in conflicts %}<li>[{{ kind }}] {{ text }}</li>{% endfor %}</ul></div>
+{% else %}<div class="flash ok">冲突检查通过：未发现教师 / 教室 / 学生时间冲突</div>{% endif %}
+<table>
+  <thead><tr><th>课程</th><th>班</th><th>教师</th><th class="num">选课/容量</th><th>上课时间与教室</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr><td>{{ r.course_id }} {{ r.course_name }}</td><td>{{ r.section_no }}</td><td>{{ r.teachers or '—' }}</td>
+    <td class="num">{{ r.enrolled_count }}/{{ r.capacity }}</td>
+    <td>{% if r.slots %}{% for x in r.slots %}<div>{{ x }}</div>{% endfor %}{% else %}<span class="tag bad">未排</span>{% endif %}</td>
+    <td class="no-print"><a class="btn small" href="{{ url_for('academic.timetable_section', sid=r.section_id) }}">编辑</a></td></tr>
+  {% else %}<tr><td colspan="6" class="muted">本学期还没有课头，请先在「教学任务」中拆分课头。</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% macro render_grid(grid) %}
+{% set rows, days, periods = grid %}
+<table class="grid">
+  <thead><tr><th>节次</th>{% for d in days %}<th>{{ WEEKDAYS[d] }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for p in periods %}
+    <tr><th>第{{ p }}节<br><small>{{ PERIOD_TIMES[p] }}</small></th>
+    {% for d in days %}{% set cell = rows[p][d] %}
+      {% if cell == 'covered' %}
+      {% elif cell %}
+        <td rowspan="{{ cell.rowspan }}" class="slot">
+          {% for it in cell['items'] %}<div class="cls"><b>{{ it.course_name }}</b> 第{{ it.section_no }}班<br>{{ it.building }}{{ it.room_no }} · {{ it.week_start }}-{{ it.week_end }}周{% if it.teachers %}<br>{{ it.teachers }}{% endif %}</div>{% endfor %}
+        </td>
+      {% else %}<td></td>{% endif %}
+    {% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}

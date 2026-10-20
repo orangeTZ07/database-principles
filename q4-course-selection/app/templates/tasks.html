@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import term_picker %}
+{% block title %}教学任务{% endblock %}
+{% block body %}
+{% include '_acad_tabs.html' %}
+<h2>教学任务（课头与教师）</h2>
+<p class="muted">必修人数超过「教室最大容量（{{ room_max }}）」或「教学班人数限额（{{ limit }}）」时，按两者较小值拆成多个课头（教学班）；
+  每个课头可分配多名教师合上，但只能有一名主讲。任选课按预计人数（可由数据挖掘预测后采纳）拆分。</p>
+{% if not term %}<p class="muted">尚无学期。</p>{% else %}
+<div class="toolbar">
+  {{ term_picker(terms, term.id) }}
+  <form method="post" action="{{ url_for('academic.tasks_split_all', tid=term.id) }}" class="inline">{{ csrf }}<button class="btn primary">一键拆分课头</button></form>
+  <form method="post" action="{{ url_for('academic.tasks_auto_teachers', tid=term.id) }}" class="inline">{{ csrf }}<button class="btn primary">自动分配主讲教师</button></form>
+  <form method="post" action="{{ url_for('academic.tasks_limit') }}" class="inline">{{ csrf }}<input type="hidden" name="term" value="{{ term.id }}">
+    教学班限额 <input type="number" name="limit" value="{{ limit }}" min="1" style="width:80px"><button class="btn small">保存</button></form>
+</div>
+<table>
+  <thead><tr><th>课程</th><th>性质</th><th class="num">学时</th><th class="num">必修人数</th><th class="num">预计人数</th><th class="num">课头数</th><th class="num">容量合计</th><th>状态</th><th class="no-print"></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.course_id }} {{ r.course_name }}</td>
+    <td><span class="tag {{ 'warn' if r.nature == '任选' }}">{{ r.nature }}</span></td>
+    <td class="num">{{ r.hours }}</td><td class="num">{{ r.required_count }}</td><td class="num">{{ r.expected_count if r.expected_count is not none else '—' }}</td>
+    <td class="num">{{ r.n_sec }}</td><td class="num">{{ r.cap_sum }}</td>
+    <td>{% if r.n_sec == 0 %}<span class="tag bad">未设课头</span>{% elif r.no_teacher %}<span class="tag warn">{{ r.no_teacher }} 个课头无教师</span>{% else %}<span class="tag ok">已就绪</span>{% endif %}</td>
+    <td class="no-print"><a class="btn small" href="{{ url_for('academic.task_detail', task_id=r.id) }}">管理</a></td>
+  </tr>
+  {% else %}<tr><td colspan="9" class="muted">本学期还没有教学任务，请先在「教学进程计划」中生成。</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

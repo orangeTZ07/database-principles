@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}教学进程计划{% endblock %}
+{% block body %}
+{% include '_acad_tabs.html' %}
+<h2>教学进程计划</h2>
+<p class="muted">教务科录入学期后，系统根据「专业培养方案」与各行政班的专业、入学年份，自动生成该学期的教学任务（开课学期、课程、学时、必修学生人数）。
+  教学任务应在<b>上一学期期中</b>前制定完毕。重复生成不会产生重复任务，只会按最新人数更新。</p>
+
+<details class="card">
+  <summary><b>＋ 录入新学期</b></summary>
+  <form method="post" action="{{ url_for('academic.term_add') }}" class="formgrid">{{ csrf }}
+    <label>学年起始年<input type="number" name="year_start" min="2000" max="2100" required placeholder="如 2027"></label>
+    <label>学期<select name="term_no"><option value="1">第 1 学期（秋）</option><option value="2">第 2 学期（春）</option></select></label>
+    <label>教学周数<input type="number" name="weeks" value="16" min="1" max="30" required></label>
+    <label>开学日期<input type="date" name="start_date" required></label>
+    <label>选课开始<input type="datetime-local" name="select_start"></label>
+    <label>选课截止<input type="datetime-local" name="select_end"></label>
+    <button class="btn primary">保存</button>
+  </form>
+</details>
+
+<table>
+  <thead><tr><th>学期</th><th>周数</th><th>开学日期</th><th>自由选课时段</th><th class="num">教学任务</th><th class="num">必修人次</th><th>制定期限</th><th class="no-print">操作</th></tr></thead>
+  <tbody>
+  {% for t in terms %}
+  <tr>
+    <td><a href="{{ url_for('academic.progress_term', tid=t.id) }}"><b>{{ t.id }}</b></a></td>
+    <td colspan="3">
+      <form method="post" action="{{ url_for('academic.term_edit', tid=t.id) }}" class="inline">{{ csrf }}
+        <input type="number" name="weeks" value="{{ t.weeks }}" min="1" max="30" style="width:60px" required>周
+        <input type="date" name="start_date" value="{{ t.start_date }}" required>
+        <input type="datetime-local" name="select_start" value="{{ (t.select_start or '').replace(' ', 'T') }}">～
+        <input type="datetime-local" name="select_end" value="{{ (t.select_end or '').replace(' ', 'T') }}">
+        <button class="btn small">保存</button>
+      </form>
+    </td>
+    <td class="num">{{ t.n_tasks }}</td><td class="num">{{ t.n_required }}</td>
+    <td class="nowrap">{% if t.deadline %}{{ t.deadline.strftime('%Y-%m-%d') }}前{% if t.overdue %} <span class="tag bad">已逾期未制定</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+    <td class="no-print nowrap">
+      <form method="post" action="{{ url_for('academic.term_generate', tid=t.id) }}" class="inline">{{ csrf }}<button class="btn small primary">{{ '重新生成' if t.n_tasks else '生成教学任务' }}</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import field_input %}
+{% block title %}{{ ent.title }}管理{% endblock %}
+{% block body %}
+{% from '_macros.html' import tabs as tabs_macro %}
+{{ tabs_macro(tabs) }}
+<h2>{{ ent.title }}</h2>
+{% if ent.intro %}<p class="muted">{{ ent.intro }}</p>{% endif %}
+
+<details class="card" {% if not rows %}open{% endif %}>
+  <summary><b>＋ 新增{{ ent.title }}</b></summary>
+  <form method="post" action="{{ url_for(request.blueprint ~ '.' ~ ent.key ~ '_add') }}" class="formgrid">{{ csrf }}
+    {% for f, ch in fields %}<label>{{ f.label }}{{ field_input(f, ch) }}{% if f.help %}<small class="muted">{{ f.help }}</small>{% endif %}</label>{% endfor %}
+    <button class="btn primary">保存</button>
+  </form>
+</details>
+
+<form method="get" class="toolbar no-print">
+  {% if ent.search %}<input name="q" value="{{ q }}" placeholder="搜索…">{% endif %}
+  {% for col, label, ch in filters %}
+    <select name="{{ col }}" onchange="this.form.submit()"><option value="">全部{{ label }}</option>
+      {% for v, l in ch %}<option value="{{ v }}" {{ 'selected' if active[col]|string == v|string }}>{{ l }}</option>{% endfor %}</select>
+  {% endfor %}
+  <button class="btn">查询</button>
+</form>
+
+<table>
+  <thead><tr>{% for c, label in ent.list_cols %}<th>{{ label }}</th>{% endfor %}<th class="no-print">操作</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>{% for c, label in ent.list_cols %}<td>{{ r[c] if r[c] is not none else '' }}</td>{% endfor %}
+      <td class="no-print nowrap">
+        <a href="{{ url_for(request.blueprint ~ '.' ~ ent.key ~ '_edit', pk=r['_pk']) }}">编辑</a>
+        {% for label, ep, param in ent.row_links %} · <a href="{{ url_for(ep, **{param: r['_pk']}) }}">{{ label }}</a>{% endfor %}
+        <form method="post" action="{{ url_for(request.blueprint ~ '.' ~ ent.key ~ '_delete', pk=r['_pk']) }}" class="inline" onsubmit="return confirm('确定删除？')">{{ csrf }}<button class="link danger">删除</button></form>
+      </td></tr>
+  {% else %}<tr><td colspan="{{ ent.list_cols|length + 1 }}" class="muted">暂无数据</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% if rows|length >= 300 %}<p class="muted">仅显示前 300 条，请用搜索/筛选缩小范围。</p>{% endif %}
+{% endblock %}

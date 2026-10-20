@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}选课管理系统{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="top no-print">
+  <a class="brand" href="{{ url_for('main.home') }}">选课管理系统</a>
+  <nav>{% if user %}{% for label, ep in nav %}<a href="{{ url_for(ep) }}">{{ label }}</a>{% endfor %}{% endif %}</nav>
+  <div class="who">
+    {% if user %}{{ user.username }}（{{ role_names[user.role] }}）
+      <a href="{{ url_for('main.password') }}">修改密码</a>
+      <form method="post" action="{{ url_for('main.logout') }}" class="inline">{{ csrf }}<button class="link">退出</button></form>
+    {% endif %}
+  </div>
+</header>
+<main>
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+  {% endwith %}
+  {% block body %}{% endblock %}
+</main>
+</body>
+</html>
